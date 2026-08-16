@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mini Excel Ultimate - Standalone HTML Offline</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- SheetJS (Excel Parser & Writer) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <!-- Chart.js (Grafik & Pivot Chart) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen font-sans antialiased pb-20">
+
+  <!-- TOP NAVBAR -->
+  <nav class="bg-white/95 backdrop-blur border-b border-slate-200 sticky top-0 z-40 px-4 py-3 shadow-2xs">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white text-sm shadow-xs">
+          XL
+        </div>
+        <div>
+          <h1 class="text-sm sm:text-base font-bold text-slate-900 leading-tight">Mini Excel Ultimate</h1>
+          <p class="text-[11px] text-slate-500">Multi-Pivot, Auto-Chart & Formula Analyzer (Light Mode)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="badge-row-count" class="hidden sm:inline-block px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-semibold">0 Baris</span>
+        <button onclick="loadSampleData()" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition cursor-pointer">
+          Contoh Data
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- 1. UPLOAD FILE UTAMA -->
+    <section class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+            📂 1. Upload Data Excel / CSV
+          </h2>
+          <p class="text-xs text-slate-500">Pilih file .xlsx, .xls, atau .csv dari perangkat Anda</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <input type="file" id="mainFileInput" accept=".xlsx, .xls, .csv" 
+          class="block w-full text-xs sm:text-sm text-slate-600 border border-slate-200 rounded-xl cursor-pointer bg-slate-50 focus:outline-none file:mr-4 file:py-2.5 file:px-4 file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer" />
+        
+        <div id="sheetSelectorBox" class="hidden p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+          <span class="text-amber-800 font-bold">Pilih Sheet:</span>
+          <select id="sheetDropdown" class="bg-white border border-slate-200 text-slate-800 text-xs rounded-lg p-2 flex-1"></select>
+          <button onclick="loadSelectedSheet()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition cursor-pointer">Muat</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTENT DASHBOARD (SHOWS AFTER DATA LOADED) -->
+    <div id="dashboardSection" class="hidden space-y-6">
+      
+      <!-- 2. MULTI-PIVOT & GRAFIK (AUTO-CHART) -->
+      <section class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+              📊 2. Multi-Pivot Table, Grafik & Keranjang
+              <span class="text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-bold">Auto</span>
+            </h2>
+            <p class="text-xs text-slate-500">Pengelompokan baris, kolom samping, visualisasi grafik & keranjang pilihan</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="exportPivotExcel()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
+              Download Pivot (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kolom Kategori (Baris):</label>
+            <select id="pivotRowCol" onchange="updatePivot()" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kolom Nilai (Value):</label>
+            <select id="pivotValCol" onchange="updatePivot()" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Fungsi Hitung:</label>
+            <select id="pivotAgg" onchange="updatePivot()" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+              <option value="Sum">Sum (Penjumlahan)</option>
+              <option value="Count">Count (Jumlah Data)</option>
+              <option value="Average">Average (Rata-rata)</option>
+              <option value="Max">Max (Nilai Tertinggi)</option>
+              <option value="Min">Min (Nilai Terendah)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Grafik Visualisasi Box -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-800">📈 Visualisasi Grafik Pivot:</span>
+            <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200">
+              <button id="btnChartBar" onclick="changeChartType('bar')" class="px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg font-bold">Batang</button>
+              <button id="btnChartLine" onclick="changeChartType('line')" class="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 rounded-lg font-medium">Garis</button>
+              <button id="btnChartPie" onclick="changeChartType('pie')" class="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 rounded-lg font-medium">Pie</button>
+            </div>
+          </div>
+          <div class="h-64 sm:h-72 w-full">
+            <canvas id="pivotCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Pivot Table Output -->
+        <div class="overflow-x-auto max-h-64 border border-slate-200 rounded-2xl bg-white shadow-2xs">
+          <table class="w-full text-xs text-left text-slate-700">
+            <thead class="bg-slate-100 text-slate-800 font-bold uppercase sticky top-0 border-b border-slate-200">
+              <tr>
+                <th class="px-3.5 py-2.5">Kategori</th>
+                <th class="px-3.5 py-2.5 text-right border-l border-slate-200">Hasil Perhitungan</th>
+                <th class="px-3.5 py-2.5 text-center w-28 border-l border-slate-200">Keranjang</th>
+              </tr>
+            </thead>
+            <tbody id="pivotTableBody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <!-- Keranjang Pivot Box -->
+        <div class="bg-purple-50/60 border border-purple-200 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+              🛒 Keranjang Data Pilihan (<span id="cartCountBadge">0</span> Item)
+            </span>
+            <div class="flex items-center gap-2">
+              <button onclick="exportCartExcel()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">
+                Export Keranjang (.xlsx)
+              </button>
+              <button onclick="clearCart()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-rose-600 border border-rose-200 text-xs font-bold rounded-xl transition cursor-pointer">
+                Kosongkan
+              </button>
+            </div>
+          </div>
+          <div id="cartItemsList" class="text-xs text-slate-600 space-y-1">
+            <p class="text-slate-400 italic">Belum ada item yang dimasukkan ke keranjang.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. TABEL UTAMA & FILTER -->
+      <section class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-slate-900">📋 3. Tabel Data & Filter Cerdas</h2>
+            <p class="text-xs text-slate-500">Pencarian instan dan unduh data hasil filter</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="tableSearchInput" oninput="renderMainTable()" placeholder="Cari data apa saja..." 
+              class="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 w-48 sm:w-64 focus:ring-2 focus:ring-teal-500 focus:outline-none" />
+            <button onclick="exportMainTableExcel()" class="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
+              Export (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-80 border border-slate-200 rounded-2xl bg-white shadow-2xs">
+          <table class="w-full text-xs text-left text-slate-700" id="mainDataTable">
+            <thead class="bg-slate-100 text-slate-800 font-bold uppercase sticky top-0 border-b border-slate-200" id="mainTableHead"></thead>
+            <tbody class="divide-y divide-slate-100" id="mainTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let currentRawData = [];
+    let currentColumns = [];
+    let currentWorkbook = null;
+    let pivotChartInstance = null;
+    let currentChartType = 'bar';
+    let cartItems = [];
+
+    // Sample Dataset
+    const SAMPLE_DATA = [
+      { "ID Transaksi": "TRX-101", "Kategori": "Elektronik", "Produk": "Laptop ASUS ZenBook", "Jumlah": 2, "Harga Satuan": 12500000, "Kota": "Jakarta", "Total Penjualan": 25000000 },
+      { "ID Transaksi": "TRX-102", "Kategori": "Pakaian", "Produk": "Kemeja Flanel", "Jumlah": 5, "Harga Satuan": 200000, "Kota": "Bandung", "Total Penjualan": 1000000 },
+      { "ID Transaksi": "TRX-103", "Kategori": "Elektronik", "Produk": "Mouse Wireless", "Jumlah": 10, "Harga Satuan": 150000, "Kota": "Surabaya", "Total Penjualan": 1500000 },
+      { "ID Transaksi": "TRX-104", "Kategori": "Makanan", "Produk": "Kopi Arabika 1kg", "Jumlah": 8, "Harga Satuan": 120000, "Kota": "Jakarta", "Total Penjualan": 960000 },
+      { "ID Transaksi": "TRX-105", "Kategori": "Pakaian", "Produk": "Celana Chino", "Jumlah": 3, "Harga Satuan": 300000, "Kota": "Semarang", "Total Penjualan": 900000 },
+      { "ID Transaksi": "TRX-106", "Kategori": "Elektronik", "Produk": "Keyboard Mechanical", "Jumlah": 4, "Harga Satuan": 600000, "Kota": "Bandung", "Total Penjualan": 2400000 },
+      { "ID Transaksi": "TRX-107", "Kategori": "Makanan", "Produk": "Cokelat Premium", "Jumlah": 15, "Harga Satuan": 50000, "Kota": "Surabaya", "Total Penjualan": 750000 },
+      { "ID Transaksi": "TRX-108", "Kategori": "Elektronik", "Produk": "Monitor 24 Inch", "Jumlah": 2, "Harga Satuan": 2100000, "Kota": "Jakarta", "Total Penjualan": 4200000 }
+    ];
+
+    function loadSampleData() {
+      currentRawData = JSON.parse(JSON.stringify(SAMPLE_DATA));
+      currentColumns = Object.keys(SAMPLE_DATA[0]);
+      onDataReady();
+    }
+
+    // Handle File Input
+    document.getElementById('mainFileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        currentWorkbook = XLSX.read(data, { type: 'array' });
+        if (currentWorkbook.SheetNames.length > 1) {
+          const dropdown = document.getElementById('sheetDropdown');
+          dropdown.innerHTML = currentWorkbook.SheetNames.map(s => `<option value="${s}">${s}</option>`).join('');
+          document.getElementById('sheetSelectorBox').classList.remove('hidden');
+        } else {
+          loadSheetData(currentWorkbook.SheetNames[0]);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function loadSelectedSheet() {
+      const sheet = document.getElementById('sheetDropdown').value;
+      loadSheetData(sheet);
+    }
+
+    function loadSheetData(sheetName) {
+      const worksheet = currentWorkbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+      if (json.length === 0) {
+        alert('Sheet kosong!');
+        return;
+      }
+      currentRawData = json;
+      currentColumns = Object.keys(json[0]);
+      onDataReady();
+    }
+
+    function onDataReady() {
+      document.getElementById('badge-row-count').innerText = `${currentRawData.length} Baris`;
+      document.getElementById('badge-row-count').classList.remove('hidden');
+      document.getElementById('dashboardSection').classList.remove('hidden');
+
+      // Populate Pivot Dropdowns
+      const rowSelect = document.getElementById('pivotRowCol');
+      const valSelect = document.getElementById('pivotValCol');
+      rowSelect.innerHTML = currentColumns.map(c => `<option value="${c}">${c}</option>`).join('');
+      valSelect.innerHTML = currentColumns.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      // Smart Defaults
+      rowSelect.value = currentColumns.find(c => isNaN(Number(currentRawData[0][c]))) || currentColumns[0];
+      valSelect.value = currentColumns.find(c => !isNaN(Number(currentRawData[0][c]))) || currentColumns[currentColumns.length - 1];
+
+      updatePivot();
+      renderMainTable();
+    }
+
+    // Pivot Calculation & Chart Render
+    function updatePivot() {
+      const rowCol = document.getElementById('pivotRowCol').value;
+      const valCol = document.getElementById('pivotValCol').value;
+      const agg = document.getElementById('pivotAgg').value;
+
+      if (!rowCol || !valCol || currentRawData.length === 0) return;
+
+      const grouped = {};
+      currentRawData.forEach(row => {
+        const key = row[rowCol] !== undefined ? String(row[rowCol]) : 'N/A';
+        if (!grouped[key]) grouped[key] = [];
+        const num = parseFloat(row[valCol]) || 0;
+        grouped[key].push(num);
+      });
+
+      const labels = Object.keys(grouped);
+      const values = labels.map(k => {
+        const arr = grouped[k];
+        if (agg === 'Sum') return arr.reduce((a, b) => a + b, 0);
+        if (agg === 'Count') return arr.length;
+        if (agg === 'Average') return arr.reduce((a, b) => a + b, 0) / arr.length;
+        if (agg === 'Max') return Math.max(...arr);
+        if (agg === 'Min') return Math.min(...arr);
+        return arr.reduce((a, b) => a + b, 0);
+      });
+
+      // Render Pivot Table
+      const tbody = document.getElementById('pivotTableBody');
+      tbody.innerHTML = labels.map((lbl, idx) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="px-3.5 py-2.5 font-semibold text-slate-800">${lbl}</td>
+          <td class="px-3.5 py-2.5 text-right font-mono text-blue-700 font-bold border-l border-slate-100">${Number(values[idx]).toLocaleString('id-ID')}</td>
+          <td class="px-3.5 py-2.5 text-center border-l border-slate-100">
+            <button onclick="addToCart('${lbl.replace(/'/g, "\\'")}', ${values[idx]})" class="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold transition">
+              + Cart
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Render Chart.js
+      renderChart(labels, values, `${agg} dari ${valCol}`);
+    }
+
+    function renderChart(labels, values, labelTitle) {
+      const ctx = document.getElementById('pivotCanvas').getContext('2d');
+      if (pivotChartInstance) pivotChartInstance.destroy();
+
+      const bgColors = [
+        '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#14b8a6'
+      ];
+
+      pivotChartInstance = new Chart(ctx, {
+        type: currentChartType,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: labelTitle,
+            data: values,
+            backgroundColor: currentChartType === 'pie' ? bgColors : '#3b82f6',
+            borderColor: currentChartType === 'line' ? '#2563eb' : 'transparent',
+            borderWidth: 2,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#334155', font: { size: 12, weight: 'bold' } } }
+          },
+          scales: currentChartType === 'pie' ? {} : {
+            x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#e2e8f0' } },
+            y: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#e2e8f0' } }
+          }
+        }
+      });
+    }
+
+    function changeChartType(type) {
+      currentChartType = type;
+      ['btnChartBar', 'btnChartLine', 'btnChartPie'].forEach(id => {
+        document.getElementById(id).className = 'px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 rounded-lg font-medium';
+      });
+      if (type === 'bar') document.getElementById('btnChartBar').className = 'px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg font-bold';
+      if (type === 'line') document.getElementById('btnChartLine').className = 'px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg font-bold';
+      if (type === 'pie') document.getElementById('btnChartPie').className = 'px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg font-bold';
+      updatePivot();
+    }
+
+    // Cart Operations
+    function addToCart(label, val) {
+      cartItems.push({ label, val, time: new Date().toLocaleTimeString('id-ID') });
+      renderCart();
+    }
+
+    function removeCartItem(idx) {
+      cartItems.splice(idx, 1);
+      renderCart();
+    }
+
+    function clearCart() {
+      cartItems = [];
+      renderCart();
+    }
+
+    function renderCart() {
+      document.getElementById('cartCountBadge').innerText = cartItems.length;
+      const container = document.getElementById('cartItemsList');
+      if (cartItems.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 italic">Belum ada item yang dimasukkan ke keranjang.</p>';
+        return;
+      }
+      container.innerHTML = cartItems.map((item, idx) => `
+        <div class="flex items-center justify-between p-2 bg-white rounded-xl border border-purple-100 shadow-2xs">
+          <span class="font-bold text-slate-800">${item.label}</span>
+          <div class="flex items-center gap-3">
+            <span class="font-mono font-bold text-emerald-700">${Number(item.val).toLocaleString('id-ID')}</span>
+            <span class="text-[10px] text-slate-400 font-mono">${item.time}</span>
+            <button onclick="removeCartItem(${idx})" class="text-rose-500 hover:text-rose-700 font-bold">×</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function exportCartExcel() {
+      if (cartItems.length === 0) { alert('Keranjang kosong!'); return; }
+      const rows = cartItems.map((item, idx) => ({ No: idx + 1, Kategori: item.label, Nilai: item.val, Waktu: item.time }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "KeranjangPivot");
+      XLSX.writeFile(wb, "Keranjang_Pivot_Pilihan.xlsx");
+    }
+
+    // Main Table Render
+    function renderMainTable() {
+      const query = (document.getElementById('tableSearchInput').value || '').toLowerCase();
+      const filtered = currentRawData.filter(row => {
+        if (!query) return true;
+        return Object.values(row).some(v => String(v).toLowerCase().includes(query));
+      });
+
+      // Head
+      document.getElementById('mainTableHead').innerHTML = `
+        <tr>${currentColumns.map(c => `<th class="px-3.5 py-2.5 border-b border-slate-200 whitespace-nowrap">${c}</th>`).join('')}</tr>
+      `;
+
+      // Body (Limit to 50 rows for fast DOM)
+      const tbody = document.getElementById('mainTableBody');
+      tbody.innerHTML = filtered.slice(0, 50).map(row => `
+        <tr class="hover:bg-slate-50 transition">
+          ${currentColumns.map(c => `<td class="px-3.5 py-2 border-b border-slate-100 whitespace-nowrap">${row[c] !== undefined ? row[c] : ''}</td>`).join('')}
+        </tr>
+      `).join('');
+    }
+
+    // Export Functions
+    function exportPivotExcel() {
+      const rowCol = document.getElementById('pivotRowCol').value;
+      const valCol = document.getElementById('pivotValCol').value;
+      const agg = document.getElementById('pivotAgg').value;
+      
+      const rows = [];
+      const tbody = document.getElementById('pivotTableBody');
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 2) {
+          rows.push({ [rowCol]: tds[0].innerText, [agg + ' ' + valCol]: tds[1].innerText });
+        }
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pivot");
+      XLSX.writeFile(wb, `Hasil_Pivot_${agg}.xlsx`);
+    }
+
+    function exportMainTableExcel() {
+      const ws = XLSX.utils.json_to_sheet(currentRawData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Data");
+      XLSX.writeFile(wb, "Data_Excel_Export.xlsx");
+    }
+  </script>
+</body>
+</html>

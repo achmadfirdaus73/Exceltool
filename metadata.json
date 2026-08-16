@@ -1,0 +1,6 @@
+{
+  "name": "Mini Excel Ultimate",
+  "description": "Aplikasi pengolahan data Excel & CSV dengan Multi-Pivot, Merge & Append, Filter Kriteria, dan Formula Studio Lengkap (80+ Rumus Excel resmi).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
