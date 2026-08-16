@@ -15,7 +15,6 @@ import { DataRow } from '../types';
 
 interface UploadSectionProps {
   onDataLoaded: (rows: DataRow[], columns: string[], fileName: string) => void;
-  onLoadSample: () => void;
   currentFileName?: string;
   rowCount?: number;
   colCount?: number;
@@ -24,7 +23,6 @@ interface UploadSectionProps {
 
 export function UploadSection({
   onDataLoaded,
-  onLoadSample,
   currentFileName,
   rowCount = 0,
   colCount = 0,
@@ -124,8 +122,8 @@ export function UploadSection({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {hasData && (
+        {hasData && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
               id="btn-toggle-upload-box"
@@ -135,18 +133,8 @@ export function UploadSection({
               <RefreshCw className="w-3.5 h-3.5" />
               <span>{isExpanded ? 'Tutup Upload' : 'Ganti / Upload File Lain'}</span>
             </button>
-          )}
-
-          <button
-            type="button"
-            id="btn-sample-data-upload"
-            onClick={onLoadSample}
-            className="text-xs text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 font-bold transition cursor-pointer"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Contoh Data</span>
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Info bar if data loaded */}

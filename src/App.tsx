@@ -4,11 +4,7 @@ import {
   GitMerge,
   LayoutGrid,
   Calculator,
-  UploadCloud,
-  Smartphone,
   CheckCircle2,
-  AlertCircle,
-  Eye,
   Rows,
 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
@@ -17,8 +13,6 @@ import { MergeAppendSection } from './components/MergeAppendSection';
 import { MainTableSection } from './components/MainTableSection';
 import { MultiPivotSection } from './components/MultiPivotSection';
 import { FormulaCalcSection } from './components/FormulaCalcSection';
-import { ApkGuideModal } from './components/ApkGuideModal';
-import { SAMPLE_RETAIL_DATA } from './utils/sampleData';
 import { DataRow } from './types';
 
 export default function App() {
@@ -26,35 +20,7 @@ export default function App() {
   const [columns, setColumns] = useState<string[]>([]);
   const [currentFileName, setCurrentFileName] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'table' | 'merge' | 'pivot' | 'calc' | 'all'>('table');
-  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  // Catch PWA beforeinstallprompt event
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const triggerNativeInstall = async () => {
-    if (!deferredPrompt) {
-      alert('Gunakan menu titik tiga (⋮) di pojok kanan atas browser dan pilih "Tambahkan ke Layar Utama" / "Install Aplikasi".');
-      return;
-    }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      showToast('Aplikasi berhasil dipasang!');
-      setDeferredPrompt(null);
-    }
-  };
 
   // Initialize from LocalStorage (Auto-Save restoration)
   useEffect(() => {
@@ -97,11 +63,6 @@ export default function App() {
     }
 
     showToast(`Berhasil memuat ${rows.length} baris dari ${fileName}`);
-  };
-
-  const handleLoadSample = () => {
-    const sampleCols = Object.keys(SAMPLE_RETAIL_DATA[0]);
-    handleDataLoaded(SAMPLE_RETAIL_DATA, sampleCols, 'Contoh_Data_Penjualan_Retail.xlsx');
   };
 
   const handleClearStorage = () => {
@@ -166,8 +127,6 @@ export default function App() {
       <Navbar
         rowCount={rawData.length}
         colCount={columns.length}
-        onLoadSample={handleLoadSample}
-        onOpenApkModal={() => setIsApkModalOpen(true)}
         onClearStorage={handleClearStorage}
       />
 
@@ -176,7 +135,6 @@ export default function App() {
         {/* SECTION 1: UPLOAD FILE UTAMA (SELALU MUNCUL DI ATAS) */}
         <UploadSection
           onDataLoaded={handleDataLoaded}
-          onLoadSample={handleLoadSample}
           currentFileName={currentFileName}
           rowCount={rawData.length}
           colCount={columns.length}
@@ -186,17 +144,12 @@ export default function App() {
         {/* JIKA BELUM ADA DATA: TAMPILKAN RINGKASAN FITUR */}
         {!hasData ? (
           <div className="space-y-4 pt-2">
-            <div className="p-4 bg-white border border-slate-200/80 rounded-2xl text-center space-y-2 shadow-sm">
+            <div className="p-4 bg-white border border-slate-200/80 rounded-2xl text-center space-y-1.5 shadow-sm">
               <p className="text-sm font-semibold text-slate-700">
-                Silakan upload file Excel/CSV di atas atau klik tombol{' '}
-                <button
-                  type="button"
-                  onClick={handleLoadSample}
-                  className="text-blue-600 hover:text-blue-700 hover:underline font-bold"
-                >
-                  "Contoh Data"
-                </button>{' '}
-                untuk langsung menguji dashboard.
+                Pilih atau seret file spreadsheet Excel (<code>.xlsx</code>, <code>.xls</code>) atau <code>.csv</code> pada kotak di atas untuk mulai mengolah data.
+              </p>
+              <p className="text-xs text-slate-500">
+                Data diproses 100% aman di browser Anda dan tersimpan otomatis ke penyimpanan lokal.
               </p>
             </div>
 
@@ -371,14 +324,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {/* APK / PWA Guide Modal */}
-      <ApkGuideModal
-        isOpen={isApkModalOpen}
-        onClose={() => setIsApkModalOpen(false)}
-        deferredPrompt={deferredPrompt}
-        onTriggerInstall={triggerNativeInstall}
-      />
     </div>
   );
 }
