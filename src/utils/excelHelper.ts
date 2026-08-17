@@ -59,11 +59,9 @@ export function parseSheetToRows(workbook: XLSX.WorkBook, sheetName: string): { 
     return { rows: [], columns: [] };
   }
 
-  // Sanitize columns list to maintain consistency
   const rawCols = Object.keys(parsed[0]);
   const columns = rawCols.filter((col) => col && !col.startsWith('__EMPTY'));
 
-  // Fill in any undefined keys with empty string
   const rows = parsed.map((r) => {
     const obj: DataRow = {};
     columns.forEach((c) => {
@@ -75,16 +73,64 @@ export function parseSheetToRows(workbook: XLSX.WorkBook, sheetName: string): { 
   return { rows, columns };
 }
 
+// Fungsi Download JSON ke Excel menggunakan Blob URL untuk WebView Android
 export function exportJsonToExcel(data: DataRow[], sheetName: string, fileName: string) {
   if (!data || data.length === 0) return;
+  
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName || 'Data');
-  XLSX.writeFile(workbook, fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`);
+  
+  const finalFileName = fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`;
+
+  try {
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = finalFileName;
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+  } catch (err) {
+    console.error('Gagal mengekspor file Excel:', err);
+    // Fallback darurat jika blob gagal
+    XLSX.writeFile(workbook, finalFileName);
+  }
 }
 
+// Fungsi Download Elemen Tabel ke Excel menggunakan Blob URL
 export function exportTableElementToExcel(tableElement: HTMLTableElement, sheetName: string, fileName: string) {
   if (!tableElement) return;
+  
   const workbook = XLSX.utils.table_to_book(tableElement, { sheet: sheetName || 'Data' });
-  XLSX.writeFile(workbook, fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`);
+  const finalFileName = fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`;
+
+  try {
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = finalFileName;
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+  } catch (err) {
+    console.error('Gagal mengekspor tabel ke Excel:', err);
+    XLSX.writeFile(workbook, finalFileName);
+  }
 }
