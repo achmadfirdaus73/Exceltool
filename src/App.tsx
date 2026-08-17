@@ -1,4 +1,4 @@
-Import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table2,
   GitMerge,
