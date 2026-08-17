@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+Import { useState, useEffect } from 'react';
 import {
   Table2,
   GitMerge,
@@ -6,9 +6,7 @@ import {
   Calculator,
   CheckCircle2,
   Rows,
-  Download,
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { Navbar } from './components/Navbar';
 import { UploadSection } from './components/UploadSection';
 import { MergeAppendSection } from './components/MergeAppendSection';
@@ -113,30 +111,6 @@ export default function App() {
     showToast(`Kolom "${newColName}" berhasil ditambahkan ke tabel utama!`);
   };
 
-  // FUNGSI UNTUK EXPORT/DOWNLOAD KE EXCEL (.xlsx)
-  const handleExportExcel = () => {
-    if (rawData.length === 0) {
-      showToast('Tidak ada data untuk diunduh.');
-      return;
-    }
-
-    try {
-      const worksheet = XLSX.utils.json_to_sheet(rawData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Data Utama");
-
-      const fileNameToSave = currentFileName 
-        ? `Modified_${currentFileName}` 
-        : 'Data_MiniExcel.xlsx';
-
-      XLSX.writeFile(workbook, fileNameToSave);
-      showToast('File Excel berhasil diunduh!');
-    } catch (err) {
-      console.error('Gagal mengunduh file Excel:', err);
-      showToast('Terjadi kesalahan saat mengunduh file.');
-    }
-  };
-
   const hasData = rawData.length > 0;
 
   return (
@@ -158,7 +132,7 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        {/* SECTION 1: UPLOAD FILE UTAMA */}
+        {/* SECTION 1: UPLOAD FILE UTAMA (SELALU MUNCUL DI ATAS) */}
         <UploadSection
           onDataLoaded={handleDataLoaded}
           currentFileName={currentFileName}
@@ -167,7 +141,7 @@ export default function App() {
           hasData={hasData}
         />
 
-        {/* JIKA BELUM ADA DATA */}
+        {/* JIKA BELUM ADA DATA: TAMPILKAN RINGKASAN FITUR */}
         {!hasData ? (
           <div className="space-y-4 pt-2">
             <div className="p-4 bg-white border border-slate-200/80 rounded-2xl text-center space-y-1.5 shadow-sm">
@@ -224,21 +198,6 @@ export default function App() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* TOMBOL DOWNLOAD EXCEL & BAR INFORMASI */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-3.5 border border-slate-200/90 rounded-2xl shadow-sm">
-              <div className="text-xs text-slate-500 font-medium">
-                File aktif: <span className="text-slate-900 font-bold">{currentFileName || 'Tanpa Nama'}</span> ({rawData.length} baris)
-              </div>
-              <button
-                type="button"
-                onClick={handleExportExcel}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm shadow-emerald-500/20 transition cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download ke Excel (.xlsx)</span>
-              </button>
-            </div>
-
             {/* Tab Bar Navigation */}
             <div className="flex items-center gap-1.5 p-1.5 bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-x-auto">
               <button
